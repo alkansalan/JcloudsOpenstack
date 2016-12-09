@@ -6,9 +6,6 @@ package openstack;
 import java.io.IOException;
 import java.util.ArrayList;
 import org.jclouds.ContextBuilder;
-import org.jclouds.compute.ComputeService;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.compute.domain.Image;
 import org.jclouds.openstack.nova.v2_0.NovaApi;
 import org.jclouds.openstack.nova.v2_0.domain.Flavor;
 import org.jclouds.openstack.nova.v2_0.domain.Server;
@@ -19,38 +16,24 @@ import com.google.common.io.Closeables;
 
 public class Openstack {
 
-	private final ComputeService computeService;
 	private ArrayList<String> instanceIDliste = new ArrayList<String>();
 	private NovaApi novaApi;
-	private int anzahlActiveServer;
 	private ServerApi serverApi;
-
-
 
 	/**
 	 * Verbindungsparamter
 	 */
 	public Openstack() {
 			
-	    String provider = "";
+		String provider = "";
 	    String identity = ""; 
 	    String credential = "";
 	    String endpoint = "";
-	      
-		  		
-		ComputeServiceContext context = ContextBuilder.newBuilder(provider)
-				.endpoint(endpoint)
-				.credentials(identity, credential)
-				.buildView(ComputeServiceContext.class);
-
-		computeService = context.getComputeService();
-		
-	    
+    
 		novaApi = ContextBuilder.newBuilder(provider)
 	                .endpoint(endpoint)
 	                .credentials(identity, credential)
-	                .buildApi(NovaApi.class);
-		
+	                .buildApi(NovaApi.class);		
 	}
 	
 	
@@ -58,11 +41,11 @@ public class Openstack {
 	/**
 	 * Liste Alle Server und gebe sie später auf dem Bildschirm aus.
 	 */
-	 public String[] listServers() {
+	 public String[] listServers(boolean checkactive) {
 		 	
-	     String region = "";
+		 String region = "RegionOne";
 	     serverApi = novaApi.getServerApi(region);
-	       
+	      
 	     FlavorApi flavorApi=  novaApi.getFlavorApi(region);
 	     String serverID;
 	     String flavorID;
@@ -71,14 +54,14 @@ public class Openstack {
 	     String serverTyp;
 	     String puffer;
 	     String instanceID;
-	     int zaehlerServerstatus = 0;
 	     String[] ergebnisArray = new String[100];
 	     int zaehler =0;
-	     		
+	     instanceIDliste.clear();
+	     
 	            for (Server server : serverApi.listInDetail().concat()) {
 	            	 serverID = server.getFlavor().getId();
 	            	 instanceID = server.getId();
-	            
+	            	 
 	            	  for (Flavor flavor : flavorApi.listInDetail().concat()) {
 	            		  flavorID = flavor.getId();
 	            		  	
@@ -87,22 +70,24 @@ public class Openstack {
 	            			  serverstatus = server.getStatus().toString();
 	            			  serverTyp = flavor.getName();
 	            			  puffer = serverName + " \t\t " + serverstatus + " \t\t " + serverTyp;
-	            			  ergebnisArray[zaehler] = puffer;
-	            		
-	            			  zaehler++;
+	            			  
 	            			 
-	            			  if (serverstatus.equals("ACTIVE")){
-	            				  zaehlerServerstatus = zaehlerServerstatus+1;
+	            			  if (( serverstatus.equals("ACTIVE")) ||  checkactive){
 	            				
-		            			  instanceIDliste.add(instanceID);
+	            				  if(serverstatus.equals("ACTIVE")){
+	            					  instanceIDliste.add(instanceID);
+	            				  }
+		            			  ergebnisArray[zaehler] = puffer;
+		  	            		
+		            			  zaehler++;
 	            			  }
-	            		
+	            			 
+	            			 
 	            		  }
 	  	             	
 	  	              }
 	          
 	            }
-	            setanzahlActiveServer(zaehlerServerstatus);
 	           
 				return ergebnisArray;
         
@@ -113,24 +98,45 @@ public class Openstack {
 			return instanceIDliste;
 	}
 	
-	
-	
-	public void setanzahlActiveServer(int zahl){	
-		anzahlActiveServer = zahl;
+	public String getInstanzName(String instID){
+		 String name = instID;
+		 for (Server server : serverApi.listInDetail().concat()) {
+        	 
+        	 String instanceID = server.getId();
+        	 name = server.getName();
+        	 
+        	 if(instanceID.equals(instID)){
+        		 return name;
+        	 }
+        	 }
+		 
+			
+		return name;
 	}
 	
 	
-	public int getanzahlActiveServer(){
-		System.out.println("anzahl: " + anzahlActiveServer);
-		return anzahlActiveServer;
-	} 
+	public String getStatusInstanz(String instID){
+		String serverStatus = instID;
+		for (Server server : serverApi.listInDetail().concat()) {
+        	 
+        	 String instanceID = server.getId();
+        	
+        	 if(instanceID.equals(instID)){
+        		 serverStatus = server.getStatus().toString();
+        	 }
+        	 }
+		 return serverStatus;
+	}
+	
+
+
 	
 	
 	/**
 	 * Always close your service when you're done with it.
 	 */
 	public void close() throws IOException {
-		Closeables.close(computeService.getContext(), true);
+		Closeables.close(novaApi, true);
 	}
 
 	
@@ -153,18 +159,13 @@ public class Openstack {
 	/**
 	 * Print all images
 	 */
-	public void listAllImages() {
+/*	public void listAllImages() {
 		for (Image image : computeService.listImages()) {
 			System.out.println(image.toString());
 		}
-	}
+	}*/
 	
 
-
-
-	
-
-	
 
 	
 }

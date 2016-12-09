@@ -8,7 +8,6 @@ import java.awt.EventQueue;
 import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Observer;
-
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JScrollPane;
@@ -86,7 +85,7 @@ public class HauptFenster implements Observer{
 		 * Auflisten der Instanzen 
 		 */
 		
-		JList list = new JList(openStack.listServers());	
+		JList list = new JList(openStack.listServers(false));	
 		JScrollPane scrollPane = new JScrollPane(list);	
 		scrollPane.setBounds(113, 76, 200, 100);		
 		frame.getContentPane().add(scrollPane);
@@ -290,26 +289,28 @@ public class HauptFenster implements Observer{
 				 * Es werden nur die ersten drei Instanzen ausgeführt.
 				 * Deshalb werden auch drei Thread erzeugt und auch ausführt 
 				 */
-				
-				if(check){
-					for(int x=0; x<3; x++){
-						
-						/** Parameter 
-						 * AWSThread( Instanz-Typ, Instanz-BS, AWS-Zone, Mein-Preis, Intanz-ID, Objekt vom Typ HauptFenster);
-						 */
-						
-						awsThread = new AWSThread(awsTypcomBox.get(x),  comboBoxproductDescription.getSelectedItem().toString(), comboBoxZone.getSelectedItem().toString(), zahl.get(x), instanceID.get(x), window);
-						awsThread.start();
+				if(instanceID.size() >= 3){ 
+					if(check){
+						for(int x=0; x<3; x++){
+							
+							/** Parameter 
+							 * AWSThread( Instanz-Typ, Instanz-BS, AWS-Zone, Mein-Preis, Intanz-ID, Objekt vom Typ HauptFenster);
+							 */
+							
+							awsThread = new AWSThread(awsTypcomBox.get(x),  comboBoxproductDescription.getSelectedItem().toString(), comboBoxZone.getSelectedItem().toString(), zahl.get(x), instanceID.get(x), window);
+							awsThread.start();
+						}
 					}
+				}else{
+					System.out.println("Es müssen mindestens drei Active Instanzen gestartet werden momemtan hab Sie erst: " + instanceID.size() + " Active Instanzen");
 				}
-				
 				
 			}
 		});		
 		btnStart.setBounds(262, 187, 89, 23);
 		frame.getContentPane().add(btnStart);			
 		
-		list_1 = new JList(openStack.listServers());	
+		list_1 = new JList(openStack.listServers(true));	
 		scrollPane1 = new JScrollPane(list_1);
 		scrollPane1.setBounds(113, 231, 200, 100);	
 		frame.getContentPane().add(scrollPane1);
@@ -337,7 +338,7 @@ public class HauptFenster implements Observer{
 	@SuppressWarnings("unchecked")
 	public synchronized void updates(){
 		listModel=new DefaultListModel();	
-		String aktu[] = openStack.listServers();
+		String aktu[] = openStack.listServers(true);
 		for (int i=0; i<aktu.length; i++) {
 		  listModel.addElement(aktu[i]);
 		}
