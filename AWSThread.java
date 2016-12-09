@@ -32,13 +32,14 @@ public class AWSThread extends Thread
   {
 	  Openstack openStacks = new Openstack();
 	  String region= zone.substring(0, zone.length()-1);
+	  String instanzeName;
 	  
 	  // Preisabfrage vom AWS 
 	  AWSPrice awsPrice = new AWSPrice(region, awsTyp, produc, zone, 1); 
 	  
 	// Preisabfrage vom AWS aber die letzten 1000 Einträge um den Mittelwert zu berechnen.
 	  AWSPrice awsMittelwert = new AWSPrice(region, awsTyp, produc, zone, 1000);
-	  openStacks.listServers();
+	  openStacks.listServers(false);
 	 
 	  
 	  
@@ -46,18 +47,19 @@ public class AWSThread extends Thread
 	 
 	  float myprice = meinePreise;
 	  
-	  // Mittelwert Berechnung der letzten 1000 Einträgen
-	  long mittelwert = awsMittelwert.getmittelwet();
+	 
 	  
 	  
 	  if(awsPrices != 0){
 	  
+		  // Mittelwert Berechnung der letzten 1000 Einträgen
+		  long mittelwert = awsMittelwert.getmittelwet();
+		  
 		  /**
 		   * Die While-Schleife durchläuft solange bis der AWS-Preis höher ist als Mein-Preis
 		   */
 		  while(myprice>=awsPrices){
 
-			  awsPrices = awsPrice.getPrice(); 
 			  try {
 				  
 				  /**
@@ -69,28 +71,29 @@ public class AWSThread extends Thread
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+			  awsPrices = awsPrice.getPrice(); 
 		  }
-		  System.out.println(instanceID +" wird heruntergefahren" +  "   mein preis: " + myprice + "  awspreis "+ awsPrices);
+		  instanzeName = openStacks.getInstanzName(instanceID);
+		  System.out.println(instanzeName +" wird heruntergefahren" +  "   mein preis: " + myprice + "  awspreis "+ awsPrices);
 		  /**
 		   * Die Instanz herunterfahren 
 		   */
 		  openStacks.stopInstance(instanceID);
 	  }
 	  else{
-		  System.out.println("Fehler bitte versuchen Sie später nochmal");  
+		  instanzeName = openStacks.getInstanzName(instanceID);
+		  System.out.println(instanzeName +":  Fehler bitte versuchen Sie später nochmal");  
 	  }
 	  
 	 /*
-	  * 10 Sekunden warten bis sich die Instanz heruntergefahren wird, 
-	  * da es vorkommen kann dass es länger dauert und die Anzeige falsch Aktualisiert (noch aktiv ist) wird.
-	  */
-	  try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	  
+	  *Warten bis es wirklich heruntergefahren wurde
+	  */  
+	 String status = openStacks.getStatusInstanz(instanceID);
+	 while(status!="SHUTOFF"){
+		status = openStacks.getStatusInstanz(instanceID);
+		
+	 } 
+		  
 	  
 	  /**
 	   * Nach dem Beenden der Instanz wird die Anzeige Aktualisiert,  
